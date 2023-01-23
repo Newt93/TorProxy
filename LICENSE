@@ -1,3 +1,41 @@
+import stem
+import time
+import os
+from stem import Signal
+from stem.control import Controller
+from stem.util import system
+
+# Connect to the Tor control port
+try:
+    with Controller.from_port(port = 9051) as controller:
+        # Authenticate to the Tor control port
+        controller.authenticate()
+
+        # Signal tor to change identity
+        controller.signal(Signal.NEWNYM)
+
+        # Start a new SOCKS listener on port 1080
+        controller.set_conf('SocksPort', '1080')
+
+        while True:
+            # Get the current IP address
+            ip_address = system.get_ip()
+            print("VPN IP address: " + ip_address)
+            # Sleep for 10 seconds
+            time.sleep(10)
+
+            # Check if the 'q' key is pressed
+            if os.system("read -t 0.1 -n 1 -s key") == ord("q"):
+                print("Disconnecting from VPN")
+                controller.close()
+                break
+
+except Exception as e:
+    print("An error occurred: ", e)
+    print("Reconnecting to VPN...")
+    os.execv(__file__, sys.argv)
+
+
 MIT License
 
 Copyright (c) 2023 Leah
